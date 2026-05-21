@@ -1,0 +1,337 @@
+/** Monster templates: id, name, element, base stats, moves, optional evolution */
+
+export const ELEMENTS = [
+  "Fire",
+  "Water",
+  "Lightning",
+  "Earth",
+  "Rock",
+  "Cosmic",
+  "Nature",
+  "Wind",
+  "Magic",
+  "Metal",
+];
+
+export const ISLANDS = [
+  { id: "fire", name: "Fire Island", element: "Fire", wild: ["crimson", "sandy"] },
+  { id: "water", name: "Water Island", element: "Water", wild: ["tide", "lily"] },
+  { id: "lightning", name: "Lightning Island", element: "Lightning", wild: ["bolt", "cloudy"] },
+  { id: "desert", name: "Desert Island", element: "Earth", wild: ["sandy", "rockie"] },
+  { id: "cave", name: "Cave Island", element: "Rock", wild: ["rockie", "metalicer"] },
+  { id: "space", name: "Space Island", element: "Cosmic", wild: ["cosmos", "spell"] },
+  { id: "swamp", name: "Swamp Island", element: "Nature", wild: ["lily", "tide"] },
+  { id: "sky", name: "Sky Island", element: "Wind", wild: ["cloudy", "cosmos"] },
+  { id: "magic", name: "Magic Island", element: "Magic", wild: ["spell", "lily"] },
+  { id: "metal", name: "Metal Island", element: "Metal", wild: ["metalicer", "rockie"] },
+];
+
+const atk = (name, power, element) => ({ name, power, element });
+
+export const MONSTERS = {
+  crimson: {
+    id: "crimson",
+    name: "Crimson",
+    element: "Fire",
+    baseHp: 38,
+    baseStr: 12,
+    evolveLevel: 16,
+    evolvesTo: "crimson_apex",
+    moves: [
+      atk("Ember Puff", 6, "Fire"),
+      atk("Flame Claw", 10, "Fire"),
+      atk("Heat Dash", 8, "Fire"),
+      atk("Cinder Ring", 12, "Fire"),
+    ],
+  },
+  crimson_apex: {
+    id: "crimson_apex",
+    name: "Crimson Apex",
+    element: "Fire",
+    baseHp: 52,
+    baseStr: 16,
+    moves: [
+      atk("Inferno Lash", 14, "Fire"),
+      atk("Solar Fang", 16, "Fire"),
+      atk("Blaze Cyclone", 15, "Fire"),
+      atk("Pyre Crown", 18, "Fire"),
+    ],
+  },
+  tide: {
+    id: "tide",
+    name: "Tide",
+    element: "Water",
+    baseHp: 42,
+    baseStr: 10,
+    evolveLevel: 16,
+    evolvesTo: "tide_king",
+    moves: [
+      atk("Splash Veil", 5, "Water"),
+      atk("Brine Jet", 9, "Water"),
+      atk("Tidal Slap", 10, "Water"),
+      atk("Foam Lance", 11, "Water"),
+    ],
+  },
+  tide_king: {
+    id: "tide_king",
+    name: "Tide King",
+    element: "Water",
+    baseHp: 56,
+    baseStr: 14,
+    moves: [
+      atk("Abyssal Crush", 14, "Water"),
+      atk("Monsoon Edge", 15, "Water"),
+      atk("Depth Surge", 16, "Water"),
+      atk("Leviathan Coil", 18, "Water"),
+    ],
+  },
+  bolt: {
+    id: "bolt",
+    name: "Bolt",
+    element: "Lightning",
+    baseHp: 36,
+    baseStr: 13,
+    evolveLevel: 16,
+    evolvesTo: "bolt_storm",
+    moves: [
+      atk("Static Tap", 6, "Lightning"),
+      atk("Spark Fang", 9, "Lightning"),
+      atk("Chain Jolt", 11, "Lightning"),
+      atk("Thunder Step", 12, "Lightning"),
+    ],
+  },
+  bolt_storm: {
+    id: "bolt_storm",
+    name: "Bolt Storm",
+    element: "Lightning",
+    baseHp: 50,
+    baseStr: 17,
+    moves: [
+      atk("Ion Lash", 14, "Lightning"),
+      atk("Sky Breaker", 16, "Lightning"),
+      atk("Voltaic Cage", 15, "Lightning"),
+      atk("Tempest Drive", 18, "Lightning"),
+    ],
+  },
+  sandy: {
+    id: "sandy",
+    name: "Sandy",
+    element: "Earth",
+    baseHp: 40,
+    baseStr: 11,
+    evolveLevel: 18,
+    evolvesTo: "sandy_dune",
+    moves: [
+      atk("Sand Tag", 7, "Earth"),
+      atk("Dune Slice", 9, "Earth"),
+      atk("Quicksand Grip", 10, "Earth"),
+      atk("Desert Wheel", 11, "Earth"),
+    ],
+  },
+  sandy_dune: {
+    id: "sandy_dune",
+    name: "Sandy Dune",
+    element: "Earth",
+    baseHp: 54,
+    baseStr: 15,
+    moves: [
+      atk("Erosion Fang", 14, "Earth"),
+      atk("Tombstone Roll", 15, "Earth"),
+      atk("Mirage Ram", 16, "Earth"),
+      atk("Epoch Quake", 18, "Earth"),
+    ],
+  },
+  rockie: {
+    id: "rockie",
+    name: "Rockie",
+    element: "Rock",
+    baseHp: 44,
+    baseStr: 11,
+    evolveLevel: 18,
+    evolvesTo: "rockie_monolith",
+    moves: [
+      atk("Pebble Shot", 6, "Rock"),
+      atk("Stone Upper", 9, "Rock"),
+      atk("Crag Bash", 10, "Rock"),
+      atk("Boulder Press", 12, "Rock"),
+    ],
+  },
+  rockie_monolith: {
+    id: "rockie_monolith",
+    name: "Rockie Monolith",
+    element: "Rock",
+    baseHp: 58,
+    baseStr: 15,
+    moves: [
+      atk("Granite Spear", 14, "Rock"),
+      atk("Fault Line", 16, "Rock"),
+      atk("Cataclysm Hold", 15, "Rock"),
+      atk("World Pillar", 18, "Rock"),
+    ],
+  },
+  cosmos: {
+    id: "cosmos",
+    name: "Cosmos",
+    element: "Cosmic",
+    baseHp: 39,
+    baseStr: 12,
+    evolveLevel: 20,
+    evolvesTo: "cosmos_void",
+    moves: [
+      atk("Star Dust", 7, "Cosmic"),
+      atk("Nebula Needle", 9, "Cosmic"),
+      atk("Orbit Slash", 10, "Cosmic"),
+      atk("Comet Tail", 11, "Cosmic"),
+    ],
+  },
+  cosmos_void: {
+    id: "cosmos_void",
+    name: "Cosmos Void",
+    element: "Cosmic",
+    baseHp: 53,
+    baseStr: 16,
+    moves: [
+      atk("Singularity Pin", 15, "Cosmic"),
+      atk("Galaxy Guillotine", 16, "Cosmic"),
+      atk("Event Horizon", 17, "Cosmic"),
+      atk("Big Silence", 19, "Cosmic"),
+    ],
+  },
+  lily: {
+    id: "lily",
+    name: "Lily",
+    element: "Nature",
+    baseHp: 41,
+    baseStr: 10,
+    evolveLevel: 17,
+    evolvesTo: "lily_bloom",
+    moves: [
+      atk("Pollen Tag", 6, "Nature"),
+      atk("Vine Lash", 9, "Nature"),
+      atk("Mire Bloom", 10, "Nature"),
+      atk("Spore Net", 11, "Nature"),
+    ],
+  },
+  lily_bloom: {
+    id: "lily_bloom",
+    name: "Lily Bloom",
+    element: "Nature",
+    baseHp: 55,
+    baseStr: 14,
+    moves: [
+      atk("Canopy Spear", 14, "Nature"),
+      atk("Root Crown", 15, "Nature"),
+      atk("Verdant Maw", 16, "Nature"),
+      atk("Evergreen Eclipse", 18, "Nature"),
+    ],
+  },
+  cloudy: {
+    id: "cloudy",
+    name: "Cloudy",
+    element: "Wind",
+    baseHp: 37,
+    baseStr: 11,
+    evolveLevel: 17,
+    evolvesTo: "cloudy_tempest",
+    moves: [
+      atk("Gust Tap", 6, "Wind"),
+      atk("Shear Cut", 9, "Wind"),
+      atk("Cyclone Toss", 10, "Wind"),
+      atk("Nimbus Ram", 11, "Wind"),
+    ],
+  },
+  cloudy_tempest: {
+    id: "cloudy_tempest",
+    name: "Cloudy Tempest",
+    element: "Wind",
+    baseHp: 51,
+    baseStr: 15,
+    moves: [
+      atk("Jetstream Fang", 14, "Wind"),
+      atk("Eye of Gale", 15, "Wind"),
+      atk("Stratosphere Drive", 16, "Wind"),
+      atk("Skyfall Verdict", 18, "Wind"),
+    ],
+  },
+  spell: {
+    id: "spell",
+    name: "Spell",
+    element: "Magic",
+    baseHp: 38,
+    baseStr: 12,
+    evolveLevel: 19,
+    evolvesTo: "spell_arcane",
+    moves: [
+      atk("Hex Chip", 7, "Magic"),
+      atk("Rune Pierce", 9, "Magic"),
+      atk("Arcane Chain", 10, "Magic"),
+      atk("Glyph Nova", 11, "Magic"),
+    ],
+  },
+  spell_arcane: {
+    id: "spell_arcane",
+    name: "Spell Arcane",
+    element: "Magic",
+    baseHp: 52,
+    baseStr: 16,
+    moves: [
+      atk("Mana Lash", 14, "Magic"),
+      atk("Grimoire Fang", 15, "Magic"),
+      atk("Astral Collapse", 16, "Magic"),
+      atk("True Name Strike", 19, "Magic"),
+    ],
+  },
+  metalicer: {
+    id: "metalicer",
+    name: "Metalicer",
+    element: "Metal",
+    baseHp: 43,
+    baseStr: 12,
+    evolveLevel: 19,
+    evolvesTo: "metalicer_forge",
+    moves: [
+      atk("Shiv Spark", 6, "Metal"),
+      atk("Plate Cutter", 9, "Metal"),
+      atk("Gear Crush", 10, "Metal"),
+      atk("Iron Spiral", 12, "Metal"),
+    ],
+  },
+  metalicer_forge: {
+    id: "metalicer_forge",
+    name: "Metalicer Forge",
+    element: "Metal",
+    baseHp: 57,
+    baseStr: 16,
+    moves: [
+      atk("Tempered Spear", 14, "Metal"),
+      atk("Foundry Hammer", 16, "Metal"),
+      atk("Alloy Guillotine", 15, "Metal"),
+      atk("Worldforge", 19, "Metal"),
+    ],
+  },
+  /** Legendary from all shards */
+  aureon: {
+    id: "aureon",
+    name: "Aureon",
+    element: "Cosmic",
+    baseHp: 70,
+    baseStr: 22,
+    moves: [
+      atk("Shard Symphony", 20, "Cosmic"),
+      atk("Crown of Islands", 22, "Cosmic"),
+      atk("Legacy Breaker", 24, "Cosmic"),
+      atk("Timothyfall", 26, "Cosmic"),
+    ],
+  },
+};
+
+/** Boss uses same roster id with level bump */
+export function getBossMonsterIdForIsland(islandIndex) {
+  const island = ISLANDS[islandIndex];
+  if (!island) return "crimson";
+  return island.wild[1] || island.wild[0];
+}
+
+export const STARTERS = ["crimson", "tide", "bolt"];
+
+export const TIMOTHY_TEAM = ["metalicer", "spell", "cosmos", "bolt", "crimson"];
