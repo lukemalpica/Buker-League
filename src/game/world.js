@@ -101,7 +101,69 @@ export const GRASS_PATCHES = [
 ];
 
 export const INTERACT_RADIUS = 2.0;
-export const GRASS_ENCOUNTER_COOLDOWN_MS = 4500;
+export const GRASS_ENCOUNTER_COOLDOWN_MS = 1500;
+export const PLAYER_SPAWN = { x: 0, z: 3.2 };
+export const PLAYER_RADIUS = 0.42;
+export const NPC_RADIUS = 0.45;
+
+/**
+ * Axis-aligned solid rects (in XZ plane) that block player movement.
+ * Buildings get a small padding so the player can stand at the door but not pass through walls.
+ * @returns {{ x: number, z: number, w: number, d: number }[]}
+ */
+export function getSolidRects() {
+  const pad = 0.15;
+  return BUILDINGS.map((b) => ({
+    x: b.x,
+    z: b.z,
+    w: b.w + pad * 2,
+    d: b.d + pad * 2,
+  }));
+}
+
+/**
+ * Resolve circle-vs-AABB collision by pushing the player out along the shallowest axis.
+ * Returns adjusted position.
+ * @param {number} px
+ * @param {number} pz
+ * @param {number} radius
+ */
+export function resolveCollisions(px, pz, radius = PLAYER_RADIUS) {
+  let x = px;
+  let z = pz;
+
+  for (const rect of getSolidRects()) {
+    const halfW = rect.w / 2;
+    const halfD = rect.d / 2;
+    const dx = x - rect.x;
+    const dz = z - rect.z;
+    const overlapX = halfW + radius - Math.abs(dx);
+    const overlapZ = halfD + radius - Math.abs(dz);
+    if (overlapX > 0 && overlapZ > 0) {
+      if (overlapX < overlapZ) {
+        x = rect.x + Math.sign(dx || 1) * (halfW + radius);
+      } else {
+        z = rect.z + Math.sign(dz || 1) * (halfD + radius);
+      }
+    }
+  }
+
+  for (const npc of NPCS) {
+    const dx = x - npc.x;
+    const dz = z - npc.z;
+    const minDist = radius + NPC_RADIUS;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 0 && dist < minDist) {
+      const push = (minDist - dist) / dist;
+      x += dx * push;
+      z += dz * push;
+    } else if (dist === 0) {
+      x += minDist;
+    }
+  }
+
+  return { x, z };
+}
 
 /**
  * @param {number} px

@@ -3,8 +3,11 @@ import {
   BUILDINGS,
   NPCS,
   GRASS_PATCHES,
+  PLAYER_SPAWN,
+  PLAYER_RADIUS,
   nearestInteractable,
   grassPatchAt,
+  resolveCollisions,
 } from "../game/world.js";
 
 const ISLAND_PALETTES = [
@@ -214,8 +217,10 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   const clock = new THREE.Clock();
   const keysDown = new Set();
   let movementFrozen = false;
-  let lastGrassId = null;
   let grassCooldownUntil = 0;
+  let grassStepProgress = 0;
+  const STEP_DIST = 0.45;
+  const STEP_ENCOUNTER_CHANCE = 0.18;
 
   const hemi = new THREE.HemisphereLight(0x9fd4ff, 0x2d4a2a, 0.9);
   scene.add(hemi);
@@ -289,7 +294,7 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   }
 
   const player = buildPlayerMesh();
-  player.position.set(0, 0, 3.2);
+  player.position.set(PLAYER_SPAWN.x, 0, PLAYER_SPAWN.z);
   scene.add(player);
 
   const walkRadius = floorRadius - 1.2;
@@ -397,6 +402,11 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
 
   let t = 0;
   function tick() {
+    if (document.hidden) {
+      clock.getDelta();
+      renderer.render(scene, camera);
+      return;
+    }
     const dt = Math.min(clock.getDelta(), 0.05);
     t += dt;
 
@@ -409,12 +419,25 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
       if (keysDown.has("KeyD") || keysDown.has("ArrowRight")) mx += 1;
     }
 
+    let moved = 0;
     if (mx !== 0 || mz !== 0) {
       const len = Math.hypot(mx, mz);
       mx /= len;
       mz /= len;
-      player.position.x += mx * moveSpeed * dt;
-      player.position.z += mz * moveSpeed * dt;
+      const stepX = mx * moveSpeed * dt;
+      const stepZ = mz * moveSpeed * dt;
+      const prevX = player.position.x;
+      const prevZ = player.position.z;
+      player.position.x += stepX;
+      player.position.z += stepZ;
+      const resolved = resolveCollisions(
+        player.position.x,
+        player.position.z,
+        PLAYER_RADIUS,
+      );
+      player.position.x = resolved.x;
+      player.position.z = resolved.z;
+      moved = Math.hypot(player.position.x - prevX, player.position.z - prevZ);
       facing = Math.atan2(mx, mz);
       player.rotation.y = facing;
     }
@@ -439,13 +462,16 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
       prompt.classList.remove("hidden");
       prompt.textContent = "Tall grass — wild Buker may appear!";
       const now = performance.now();
-      if (patch.id !== lastGrassId && now >= grassCooldownUntil && hooks.onGrassEncounter) {
-        lastGrassId = patch.id;
-        grassCooldownUntil = now + 4500;
-        hooks.onGrassEncounter(patch.id);
+      grassStepProgress += moved;
+      if (grassStepProgress >= STEP_DIST && now >= grassCooldownUntil) {
+        grassStepProgress = 0;
+        if (Math.random() < STEP_ENCOUNTER_CHANCE && hooks.onGrassEncounter) {
+          grassCooldownUntil = now + 6000;
+          hooks.onGrassEncounter(patch.id);
+        }
       }
     } else {
-      lastGrassId = null;
+      grassStepProgress = 0;
       const near = exploring ? nearestInteractable(px, pz) : null;
       if (near) {
         prompt.classList.remove("hidden");
@@ -508,8 +534,26 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
       movementFrozen = frozen;
       if (frozen) keysDown.clear();
     },
-    bumpGrassCooldown(ms = 4500) {
+    bumpGrassCooldown(ms = 6000) {
       grassCooldownUntil = performance.now() + ms;
+      grassStepProgress = 0;
+    },
+    /** Move player back to a safe spawn (e.g. after blackout or island travel). */
+    respawn(x = PLAYER_SPAWN.x, z = PLAYER_SPAWN.z) {
+      player.position.set(x, 0, z);
+      facing = 0;
+      player.rotation.y = facing;
+      grassCooldownUntil = performance.now() + 6000;
+      grassStepProgress = 0;
+      camSmooth.set(x, orbitUp, z - orbitBack);
+      camera.position.copy(camSmooth);
+    },
+    /** Move player to stand just in front of a named building's door. */
+    moveToBuildingDoor(buildingId) {
+      const b = BUILDINGS.find((x) => x.id === buildingId);
+      if (!b) return;
+      const doorZ = b.z + b.d / 2 + 1.0;
+      this.respawn(b.x, doorZ);
     },
     dispose() {
       window.removeEventListener("keydown", onKeyDown);

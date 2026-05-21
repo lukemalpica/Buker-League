@@ -2,6 +2,31 @@ import { MONSTERS } from "./data.js";
 import { makeMonster, templateForOwned, addXp } from "./state.js";
 
 /**
+ * Type effectiveness chart: attacker → { defender: multiplier }.
+ * Missing pairs default to 1.0. Values: 1.5 super-effective, 0.6 resisted.
+ */
+export const TYPE_CHART = {
+  Fire: { Nature: 1.5, Metal: 1.5, Water: 0.6, Rock: 0.6 },
+  Water: { Fire: 1.5, Rock: 1.5, Lightning: 0.6, Nature: 0.6 },
+  Lightning: { Water: 1.5, Wind: 1.5, Earth: 0.6, Rock: 0.6 },
+  Earth: { Lightning: 1.5, Metal: 1.5, Wind: 0.6, Nature: 0.6 },
+  Rock: { Wind: 1.5, Fire: 1.5, Metal: 0.6, Water: 0.6 },
+  Cosmic: { Magic: 1.5, Wind: 1.5, Metal: 0.6 },
+  Nature: { Water: 1.5, Earth: 1.5, Fire: 0.6, Metal: 0.6 },
+  Wind: { Earth: 1.5, Nature: 1.5, Rock: 0.6, Lightning: 0.6 },
+  Magic: { Cosmic: 1.5, Lightning: 1.5, Metal: 0.6 },
+  Metal: { Rock: 1.5, Magic: 1.5, Fire: 0.6, Lightning: 0.6 },
+};
+
+/**
+ * @param {string} attackElem
+ * @param {string} defenderElem
+ */
+export function typeMultiplier(attackElem, defenderElem) {
+  return TYPE_CHART[attackElem]?.[defenderElem] ?? 1.0;
+}
+
+/**
  * @param {import('./types').OwnedMonster} mon
  * @param {number} level
  */
@@ -45,15 +70,18 @@ export function createBattle(opts) {
  */
 export function rollDamage(attacker, defender, moveIndex) {
   const def = templateForOwned(attacker);
+  const defenderDef = templateForOwned(defender);
   const move = def.moves[moveIndex];
-  if (!move) return { damage: 0, crit: false, move: { name: "Struggle", power: 1 } };
+  if (!move) return { damage: 0, crit: false, move: { name: "Struggle", power: 1 }, effectiveness: 1 };
   const str = attacker.strength;
-  const base = move.power + str * 0.35;
+  const stab = move.element === def.element ? 1.15 : 1.0;
+  const effectiveness = typeMultiplier(move.element, defenderDef?.element);
+  const base = (move.power + str * 0.35) * stab * effectiveness;
   const variance = 0.85 + Math.random() * 0.3;
   let damage = Math.max(1, Math.round(base * variance));
   const crit = Math.random() < Math.min(0.22, 0.08 + attacker.strength * 0.004);
   if (crit) damage = Math.round(damage * 1.45);
-  return { damage, crit, move };
+  return { damage, crit, move, effectiveness };
 }
 
 function appendTurn(battle, attackerSide, moveIndex) {
@@ -62,8 +90,11 @@ function appendTurn(battle, attackerSide, moveIndex) {
   if (!atkSide.mon || atkSide.mon.hp <= 0) return;
   const r = rollDamage(atkSide.mon, defSide.mon, moveIndex);
   defSide.mon.hp -= r.damage;
+  let suffix = r.crit ? " (CRIT!)" : "";
+  if (r.effectiveness > 1.2) suffix += " — super effective!";
+  else if (r.effectiveness < 0.85 && r.effectiveness > 0) suffix += " — it resisted.";
   battle.log.push(
-    `${atkSide.mon.nickname} used ${r.move.name} for ${r.damage}${r.crit ? " (CRIT!)" : ""}!`,
+    `${atkSide.mon.nickname} used ${r.move.name} for ${r.damage}${suffix}`,
   );
   if (defSide.mon.hp <= 0) {
     defSide.mon.hp = 0;
@@ -122,6 +153,41 @@ export function switchActive(battle, partyIndex) {
   battle.needsSwitch = false;
   battle.log.push(`Go, ${m.nickname}!`);
   return true;
+}
+
+/**
+ * Attempt to flee from a wild battle.
+ * Success ~70% (modified slightly by speed-vs-enemy). Failure burns the turn — the enemy strikes.
+ * @param {ReturnType<typeof createBattle>} battle
+ * @returns {{ fled: boolean }}
+ */
+export function tryRun(battle) {
+  if (battle.over || battle.needsSwitch) return { fled: false };
+  const playerStr = battle.player.mon?.strength ?? 1;
+  const enemyStr = battle.enemy.mon?.strength ?? 1;
+  const chance = Math.min(0.92, Math.max(0.4, 0.7 + (playerStr - enemyStr) * 0.02));
+  if (Math.random() < chance) {
+    battle.over = true;
+    battle.winner = "fled";
+    battle.log.push("You broke away from the battle.");
+    return { fled: true };
+  }
+  battle.log.push("Couldn't escape! The foe strikes…");
+  const em = MONSTERS[battle.enemy.mon.templateId];
+  const enemyMove = Math.floor(Math.random() * em.moves.length);
+  appendTurn(battle, "enemy", enemyMove);
+  if (battle.winner === "enemy" && battle.player.mon.hp <= 0) {
+    const backup = battle.party.findIndex(
+      (m, i) => i !== battle.activeIndex && m.hp > 0,
+    );
+    if (backup !== -1) {
+      battle.over = false;
+      battle.winner = null;
+      battle.needsSwitch = true;
+      battle.log.push(`${battle.player.mon.nickname} fainted! Choose another monster.`);
+    }
+  }
+  return { fled: false };
 }
 
 export function awardCoins() {

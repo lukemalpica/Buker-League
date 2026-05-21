@@ -9,6 +9,8 @@ import {
   grantShard,
   tryEvolve,
   templateForOwned,
+  applyBlackout,
+  isPartyWiped,
 } from "./game/state.js";
 import { ISLANDS, MONSTERS, getBossMonsterIdForIsland, TIMOTHY_TEAM } from "./game/data.js";
 import { BUILDINGS, NPCS } from "./game/world.js";
@@ -18,6 +20,7 @@ import {
   switchActive,
   awardCoins,
   awardXpForWin,
+  tryRun,
 } from "./game/battle.js";
 
 const panel = document.getElementById("panel");
@@ -285,8 +288,15 @@ function openNpc(/** @type {string} */ id) {
   const npc = NPCS.find((n) => n.id === id);
   if (!npc) return;
   setWorldFrozen(true);
-  const lines = npc.lines.map((l) => `<p>${l}</p>`).join("");
-  const battleBtn = npc.battle
+  const beaten = state.defeatedTrainers?.includes(npc.id);
+  const lines = (
+    beaten && npc.battle
+      ? [...npc.lines, "(You've already proven yourself. Well fought.)"]
+      : npc.lines
+  )
+    .map((l) => `<p>${l}</p>`)
+    .join("");
+  const battleBtn = npc.battle && !beaten
     ? `<button type="button" id="npc-fight">Accept battle</button>`
     : "";
   render(`
@@ -298,10 +308,10 @@ function openNpc(/** @type {string} */ id) {
     </div>
   `);
   document.getElementById("npc-fight")?.addEventListener("click", () => {
-    if (!npc.battle) return;
-    setWorldFrozen(false);
+    if (!npc.battle || beaten) return;
     openBattle({
-      mode: "wild",
+      mode: "trainer",
+      trainerId: npc.id,
       enemyId: npc.battle.enemyId,
       enemyLevel: npc.battle.level + state.islandIndex,
       enemyName: npc.battle.name,
@@ -397,6 +407,7 @@ function showHub() {
   document.getElementById("travel")?.addEventListener("click", () => {
     state.islandIndex = (state.islandIndex + 1) % ISLANDS.length;
     persist();
+    worldScene?.respawn();
     showHub();
   });
 
@@ -463,20 +474,43 @@ function showLegendaryEgg() {
 }
 
 /**
- * @param {{ mode: string, enemyId: string, enemyLevel: number, enemyName: string, forceLoss: boolean }} cfg
+ * @param {{ mode: string, enemyId: string, enemyLevel: number, enemyName: string, forceLoss: boolean, trainerId?: string }} cfg
  */
 function openBattle(cfg) {
   setWorldFrozen(true);
   worldScene?.bumpGrassCooldown(6000);
+  let rewardsApplied = false;
+
+  const firstAlive = state.party.findIndex((m) => !m.isEgg && m.hp > 0);
+  if (firstAlive < 0 && cfg.mode !== "timothy_intro") {
+    setWorldFrozen(false);
+    render(`
+      <h1>Out cold</h1>
+      <p>Your whole team needs rest. Find a Healing Center on the island first.</p>
+      <div class="actions"><button type="button" id="ok">Okay</button></div>
+    `);
+    document.getElementById("ok")?.addEventListener("click", showHub);
+    return;
+  }
+
   const battle = createBattle({
     playerName: state.playerName,
     playerParty: state.party,
-    activeIndex: 0,
+    activeIndex: Math.max(0, firstAlive),
     enemyTemplateId: cfg.enemyId,
     enemyLevel: cfg.enemyLevel,
     enemyName: cfg.enemyName,
     rules: { forcePlayerLoss: cfg.forceLoss },
   });
+
+  if (!battle.player.mon) {
+    setWorldFrozen(false);
+    alert("No able monsters! Visit the Healing Center.");
+    showHub();
+    return;
+  }
+
+  const canRun = cfg.mode === "wild";
 
   function paint() {
     const p = battle.player.mon;
@@ -501,6 +535,10 @@ function openBattle(cfg) {
       )
       .join("");
 
+    const runBtn = canRun && !battle.needsSwitch && !battle.over
+      ? `<button type="button" id="run">Run away</button>`
+      : "";
+
     render(`
       <h1>Battle</h1>
       <p><strong>${e.nickname}</strong> Lv.${e.level} — ${defE.element}</p>
@@ -510,7 +548,7 @@ function openBattle(cfg) {
       <div class="log">${battle.log.slice(-14).join("\n")}</div>
       <div class="actions">
         ${battle.needsSwitch ? `<p class="muted">Choose your next fighter:</p>${switches}` : ""}
-        ${!battle.needsSwitch && !battle.over ? `<p class="muted">Moves</p>${moves}<p class="muted">Switch (enemy strikes after you swap)</p>${switches}` : ""}
+        ${!battle.needsSwitch && !battle.over ? `<p class="muted">Moves</p>${moves}<p class="muted">Switch (enemy strikes after you swap)</p>${switches}${runBtn}` : ""}
         ${battle.over ? `<button type="button" id="done">Continue</button>` : ""}
       </div>
     `);
@@ -543,6 +581,11 @@ function openBattle(cfg) {
         afterStep();
       });
     });
+
+    document.getElementById("run")?.addEventListener("click", () => {
+      tryRun(battle);
+      afterStep();
+    });
   }
 
   function afterStep() {
@@ -553,12 +596,12 @@ function openBattle(cfg) {
       battle.winner = "enemy";
       battle.log.push("Timothy's legend aura shrugs off your last hope…");
     }
-    if (battle.winner === "player") {
+    if (battle.winner === "player" && !rewardsApplied) {
+      rewardsApplied = true;
       applyWinRewards();
-      battle.over = true;
-    } else if (battle.over && battle.winner === "enemy") {
+    } else if (battle.over && battle.winner === "enemy" && !rewardsApplied) {
+      rewardsApplied = true;
       applyLoss();
-      battle.over = true;
     }
     paint();
   }
@@ -566,6 +609,14 @@ function openBattle(cfg) {
   function applyWinRewards() {
     if (cfg.mode === "wild") {
       state.coins += awardCoins();
+      if (battle.player.mon) awardXpForWin(battle.player.mon);
+      tryEvolve(battle.player.mon);
+    }
+    if (cfg.mode === "trainer") {
+      state.coins += 15 + awardCoins();
+      if (cfg.trainerId && !state.defeatedTrainers.includes(cfg.trainerId)) {
+        state.defeatedTrainers.push(cfg.trainerId);
+      }
       if (battle.player.mon) awardXpForWin(battle.player.mon);
       tryEvolve(battle.player.mon);
     }
@@ -596,7 +647,6 @@ function openBattle(cfg) {
   }
 
   function finishBattle() {
-    setWorldFrozen(false);
     persist();
     if (cfg.mode === "timothy_intro") {
       render(`
@@ -604,9 +654,32 @@ function openBattle(cfg) {
         <p>You wake on the shore. Ten islands shimmer on the horizon — each boss holds a shard.</p>
         <div class="actions"><button type="button" id="ok">Continue</button></div>
       `);
-      document.getElementById("ok")?.addEventListener("click", showHub);
+      document.getElementById("ok")?.addEventListener("click", () => {
+        setWorldFrozen(false);
+        worldScene?.respawn();
+        showHub();
+      });
       return;
     }
+
+    if (battle.winner === "enemy" && isPartyWiped(state)) {
+      const lostCoins = Math.floor((state.coins || 0) / 2);
+      applyBlackout(state);
+      persist();
+      render(`
+        <h1>You blacked out…</h1>
+        <p>Kind hands carried you to the Healing Center. Your team is restored, but ${lostCoins} coins slipped from your pouch.</p>
+        <div class="actions"><button type="button" id="ok">Back to the world</button></div>
+      `);
+      document.getElementById("ok")?.addEventListener("click", () => {
+        setWorldFrozen(false);
+        worldScene?.moveToBuildingDoor("center");
+        showHub();
+      });
+      return;
+    }
+
+    setWorldFrozen(false);
     showHub();
   }
 
