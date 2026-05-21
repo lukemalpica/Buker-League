@@ -9,6 +9,7 @@ import {
   grassPatchAt,
   resolveCollisions,
 } from "../game/world.js";
+import { createIslandDecor } from "./islandDecor.js";
 
 const ISLAND_PALETTES = [
   [0xff6b35, 0xff9f1c],
@@ -208,9 +209,9 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
   camera.position.set(0, 5.2, -4.8);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x0a0e14, 1);
   renderer.domElement.tabIndex = 0;
   renderer.domElement.style.outline = "none";
 
@@ -250,13 +251,14 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   scene.add(ring);
 
   const floorRadius = 14;
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x3d5a3a,
+    roughness: 0.92,
+    metalness: 0.02,
+  });
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(floorRadius, 48),
-    new THREE.MeshStandardMaterial({
-      color: 0x3d5a3a,
-      roughness: 0.92,
-      metalness: 0.02,
-    }),
+    floorMat,
   );
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
@@ -268,6 +270,32 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   path.rotation.x = -Math.PI / 2;
   path.position.y = 0.01;
   scene.add(path);
+
+  /** Holder swapped out whenever the active island changes. */
+  let decorGroup = new THREE.Group();
+  scene.add(decorGroup);
+  let lastIslandIdx = -1;
+
+  function refreshIslandDecor(idx) {
+    if (idx === lastIslandIdx) return;
+    lastIslandIdx = idx;
+    scene.remove(decorGroup);
+    decorGroup.traverse((o) => {
+      if (o.geometry) o.geometry.dispose?.();
+      if (o.material) o.material.dispose?.();
+    });
+    const avoid = [
+      ...BUILDINGS.map((b) => ({ x: b.x, z: b.z })),
+      ...NPCS.map((n) => ({ x: n.x, z: n.z })),
+      ...GRASS_PATCHES.map((g) => ({ x: g.x, z: g.z })),
+    ];
+    const { group, preset } = createIslandDecor(idx, avoid);
+    decorGroup = group;
+    scene.add(decorGroup);
+    floorMat.color.setHex(preset.ground);
+    renderer.setClearColor(preset.sky, 1);
+    scene.fog = new THREE.FogExp2(preset.sky, 0.028);
+  }
 
   const grassGroups = GRASS_PATCHES.map(buildGrassPatch);
   grassGroups.forEach((g) => scene.add(g));
@@ -299,16 +327,22 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
 
   const walkRadius = floorRadius - 1.2;
   const moveSpeed = 7.2;
-  const orbitBack = 4.35;
-  const orbitUp = 5.55;
-  const lookHeight = 0.92;
-  const lookLead = 0.28;
-  const camLerpMove = 0.28;
-  const camLerpIdle = 0.14;
+  /**
+   * Fixed-orientation camera (classic top-down feel):
+   * placed on the +Z side of the player and looking back along -Z so the
+   * Three.js view stays in standard orientation (world +X = screen right,
+   * world -Z = "into the scene" = up the screen). This keeps W/S/A/D
+   * mapped to up/down/left/right regardless of the player's facing.
+   */
+  const orbitBack = 5.6;
+  const orbitUp = 6.4;
+  const lookHeight = 0.95;
+  const lookLead = 1.4;
+  const camLerpMove = 0.22;
+  const camLerpIdle = 0.12;
   let facing = 0;
 
   const camSmooth = new THREE.Vector3();
-  const forward = new THREE.Vector3();
   const camDesired = new THREE.Vector3();
   const lookTarget = new THREE.Vector3();
   const proj = new THREE.Vector3();
@@ -330,7 +364,7 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
 
   const hint = document.createElement("div");
   hint.className = "world-move-hint";
-  hint.textContent = "WASD move · E interact · tall grass triggers wild battles";
+  hint.textContent = "WASD / arrow keys move · E interact · step in tall grass for wild battles";
   container.appendChild(hint);
 
   const prompt = document.createElement("div");
@@ -391,12 +425,10 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
   {
     const px = player.position.x;
     const pz = player.position.z;
-    forward.set(Math.sin(facing), 0, Math.cos(facing));
-    camDesired.set(px, 0, pz).addScaledVector(forward, -orbitBack);
-    camDesired.y = orbitUp;
+    camDesired.set(px, orbitUp, pz + orbitBack);
     camSmooth.copy(camDesired);
     camera.position.copy(camSmooth);
-    lookTarget.set(px, lookHeight, pz).addScaledVector(forward, lookLead);
+    lookTarget.set(px, lookHeight, pz - lookLead);
     camera.lookAt(lookTarget);
   }
 
@@ -499,6 +531,7 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
     }
 
     const idx = typeof getIslandIndex === "function" ? getIslandIndex() : 0;
+    refreshIslandDecor(idx);
     const [a, b] = ISLAND_PALETTES[idx] ?? ISLAND_PALETTES[0];
     const mix = (Math.sin(t * 0.4) + 1) * 0.5;
     const c = new THREE.Color(a).lerp(new THREE.Color(b), mix);
@@ -511,16 +544,11 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
     const moving = mx !== 0 || mz !== 0;
     const camLerp = moving ? camLerpMove : camLerpIdle;
 
-    forward.set(Math.sin(facing), 0, Math.cos(facing));
-    camDesired.set(px, 0, pz);
-    camDesired.addScaledVector(forward, -orbitBack);
-    camDesired.y = orbitUp;
-
+    camDesired.set(px, orbitUp, pz + orbitBack);
     camSmooth.lerp(camDesired, camLerp);
     camera.position.copy(camSmooth);
 
-    lookTarget.set(px, lookHeight, pz);
-    lookTarget.addScaledVector(forward, lookLead);
+    lookTarget.set(px, lookHeight, pz - lookLead);
     camera.lookAt(lookTarget);
 
     updateLabels();
@@ -545,8 +573,10 @@ export function createWorldScene(container, getIslandIndex, hooks = {}) {
       player.rotation.y = facing;
       grassCooldownUntil = performance.now() + 6000;
       grassStepProgress = 0;
-      camSmooth.set(x, orbitUp, z - orbitBack);
+      camSmooth.set(x, orbitUp, z + orbitBack);
       camera.position.copy(camSmooth);
+      lookTarget.set(x, lookHeight, z - lookLead);
+      camera.lookAt(lookTarget);
     },
     /** Move player to stand just in front of a named building's door. */
     moveToBuildingDoor(buildingId) {

@@ -11,6 +11,9 @@ import {
   templateForOwned,
   applyBlackout,
   isPartyWiped,
+  healParty,
+  addCaughtMonster,
+  PARTY_LIMIT,
 } from "./game/state.js";
 import { ISLANDS, MONSTERS, getBossMonsterIdForIsland, TIMOTHY_TEAM } from "./game/data.js";
 import { BUILDINGS, NPCS } from "./game/world.js";
@@ -21,7 +24,10 @@ import {
   awardCoins,
   awardXpForWin,
   tryRun,
+  tryCapture,
+  captureChance,
 } from "./game/battle.js";
+import { monsterSprite } from "./game/sprites.js";
 
 const panel = document.getElementById("panel");
 const hudName = document.getElementById("hud-name");
@@ -56,7 +62,7 @@ function canExploreWorld() {
 
 function syncHud() {
   hudName.textContent = state.playerName ? `Trainer: ${state.playerName}` : "BUKER";
-  hudCoins.textContent = `Coins: ${state.coins}`;
+  hudCoins.textContent = `Coins: ${state.coins} · Capsules: ${state.capsules ?? 0}`;
   hudShards.textContent = `Shards: ${state.shards.length} / ${ISLANDS.length}`;
 }
 
@@ -229,18 +235,33 @@ function openBuilding(/** @type {string} */ id) {
   if (b.role === "shop") {
     render(`
       <h1>${b.name}</h1>
-      <p class="muted">Coins: ${state.coins}</p>
-      <p>Island vendors stock rare treats soon. For now, rest and train in the grass.</p>
+      <p class="muted">Coins: ${state.coins} · Capsules: ${state.capsules}</p>
       <div class="actions">
-        <button type="button" id="buy" ${state.coins < 50 ? "disabled" : ""}>Buy energy tonic (50 coins) — +15% HP to lead</button>
+        <button type="button" id="buy-tonic" ${state.coins < 80 ? "disabled" : ""}>Vitality Tonic (80 coins) — fully heal the party</button>
+        <button type="button" id="buy-capsule" ${state.coins < 50 ? "disabled" : ""}>Capture Capsule (50 coins) — catch wild monsters in battle</button>
+        <button type="button" id="buy-energy" ${state.coins < 30 ? "disabled" : ""}>Energy Tonic (30 coins) — +15% HP to lead</button>
         <button type="button" id="leave">Leave</button>
       </div>
     `);
-    document.getElementById("buy")?.addEventListener("click", () => {
+    document.getElementById("buy-tonic")?.addEventListener("click", () => {
+      if (state.coins < 80) return;
+      state.coins -= 80;
+      healParty(state);
+      persist();
+      openBuilding(id);
+    });
+    document.getElementById("buy-capsule")?.addEventListener("click", () => {
       if (state.coins < 50) return;
+      state.coins -= 50;
+      state.capsules = (state.capsules || 0) + 1;
+      persist();
+      openBuilding(id);
+    });
+    document.getElementById("buy-energy")?.addEventListener("click", () => {
+      if (state.coins < 30) return;
       const lead = state.party.find((m) => !m.isEgg);
       if (!lead) return;
-      state.coins -= 50;
+      state.coins -= 30;
       lead.hp = Math.min(lead.maxHp, lead.hp + Math.round(lead.maxHp * 0.15));
       persist();
       openBuilding(id);
@@ -328,6 +349,10 @@ function showHub() {
   setWorldFrozen(false);
   const island = ISLANDS[state.islandIndex];
   const shardHere = state.shards.includes(island.id);
+  const canTravel = shardHere;
+  const travelLabel = canTravel
+    ? "Travel to next island"
+    : `Travel locked — defeat the ${island.name} Boss first`;
   render(`
     <h1>Island hub</h1>
     <p>Current region: <strong>${island.name}</strong> — ${island.element} attunement.</p>
@@ -340,7 +365,7 @@ function showHub() {
       <button type="button" id="eggmenu" ${!state.inventoryEggs?.length ? "disabled" : ""}>Hatch legendary egg</button>
       <button type="button" id="timothy">${timothyButtonLabel()}</button>
       <button type="button" id="arena" ${state.arenaUnlocked ? "" : "disabled"}>Arena — Timothy finale ${state.arenaUnlocked ? "" : "(need all shards)"}</button>
-      <button type="button" id="travel">Travel to next island</button>
+      <button type="button" id="travel" ${canTravel ? "" : "disabled"}>${travelLabel}</button>
       <button type="button" id="save">Save (auto on most actions)</button>
     </div>
   `);
@@ -433,12 +458,19 @@ function showParty(onBack = showHub) {
         d.evolveLevel && d.evolvesTo
           ? `Evolves at Lv.${d.evolveLevel} → ${MONSTERS[d.evolvesTo].name}`
           : "Final form";
-      return `<li><strong>${m.nickname}</strong> — ${d.element} Lv.${m.level} — HP ${m.hp}/${m.maxHp} — Str ${m.strength}. ${evo}</li>`;
+      const sprite = m.isEgg
+        ? `<div class="party-sprite" style="font-size:1.8rem">🥚</div>`
+        : `<div class="party-sprite">${monsterSprite(m.templateId, 56)}</div>`;
+      return `<li class="party-row">${sprite}<div><strong>${m.nickname}</strong> — ${d.element} Lv.${m.level}<br><span class="muted">HP ${m.hp}/${m.maxHp} · Str ${m.strength} · ${evo}</span></div></li>`;
     })
     .join("");
+  const storage = state.storage?.length
+    ? `<p class="muted">Storage: ${state.storage.length} caught monster${state.storage.length === 1 ? "" : "s"} (party cap ${PARTY_LIMIT}).</p>`
+    : "";
   render(`
     <h1>Party</h1>
-    <ul style="margin:0;padding-left:1.1rem;line-height:1.5">${rows}</ul>
+    <ul class="party-list">${rows}</ul>
+    ${storage}
     <div class="actions"><button type="button" id="back">Back</button></div>
   `);
   document.getElementById("back")?.addEventListener("click", onBack);
@@ -535,20 +567,34 @@ function openBattle(cfg) {
       )
       .join("");
 
+    const canCatch = cfg.mode === "wild" && !battle.needsSwitch && !battle.over;
     const runBtn = canRun && !battle.needsSwitch && !battle.over
       ? `<button type="button" id="run">Run away</button>`
+      : "";
+    const catchBtn = canCatch
+      ? `<button type="button" id="catch" ${state.capsules > 0 ? "" : "disabled"}>Throw Capsule (${state.capsules} left, ~${Math.round(captureChance(battle) * 100)}% catch)</button>`
       : "";
 
     render(`
       <h1>Battle</h1>
-      <p><strong>${e.nickname}</strong> Lv.${e.level} — ${defE.element}</p>
-      <div class="battle-bar enemy"><div style="width:${pct(e.hp, e.maxHp)}"></div></div>
-      <p><strong>${p?.nickname ?? ""}</strong> Lv.${p?.level ?? ""} — ${defP?.element ?? ""}</p>
-      <div class="battle-bar"><div style="width:${pct(p?.hp ?? 0, p?.maxHp ?? 1)}"></div></div>
+      <div class="battle-row">
+        <div class="battle-sprite enemy">${monsterSprite(e.templateId, 88)}</div>
+        <div class="battle-info">
+          <p><strong>${e.nickname}</strong> Lv.${e.level} — ${defE.element}</p>
+          <div class="battle-bar enemy"><div style="width:${pct(e.hp, e.maxHp)}"></div></div>
+        </div>
+      </div>
+      <div class="battle-row">
+        <div class="battle-sprite player">${p ? monsterSprite(p.templateId, 88) : ""}</div>
+        <div class="battle-info">
+          <p><strong>${p?.nickname ?? ""}</strong> Lv.${p?.level ?? ""} — ${defP?.element ?? ""}</p>
+          <div class="battle-bar"><div style="width:${pct(p?.hp ?? 0, p?.maxHp ?? 1)}"></div></div>
+        </div>
+      </div>
       <div class="log">${battle.log.slice(-14).join("\n")}</div>
       <div class="actions">
         ${battle.needsSwitch ? `<p class="muted">Choose your next fighter:</p>${switches}` : ""}
-        ${!battle.needsSwitch && !battle.over ? `<p class="muted">Moves</p>${moves}<p class="muted">Switch (enemy strikes after you swap)</p>${switches}${runBtn}` : ""}
+        ${!battle.needsSwitch && !battle.over ? `<p class="muted">Moves</p>${moves}<p class="muted">Switch (enemy strikes after you swap)</p>${switches}${catchBtn}${runBtn}` : ""}
         ${battle.over ? `<button type="button" id="done">Continue</button>` : ""}
       </div>
     `);
@@ -586,6 +632,21 @@ function openBattle(cfg) {
       tryRun(battle);
       afterStep();
     });
+
+    document.getElementById("catch")?.addEventListener("click", () => {
+      if (!state.capsules || state.capsules <= 0) return;
+      state.capsules -= 1;
+      const result = tryCapture(battle);
+      if (result.caught && result.captured) {
+        const dest = addCaughtMonster(state, result.captured);
+        if (dest === "storage") {
+          battle.log.push(`Party full — sent to storage (${state.storage.length}).`);
+        } else {
+          battle.log.push("Added to your party!");
+        }
+      }
+      afterStep();
+    });
   }
 
   function afterStep() {
@@ -599,11 +660,24 @@ function openBattle(cfg) {
     if (battle.winner === "player" && !rewardsApplied) {
       rewardsApplied = true;
       applyWinRewards();
+    } else if (battle.winner === "captured" && !rewardsApplied) {
+      rewardsApplied = true;
+      applyCaptureRewards();
     } else if (battle.over && battle.winner === "enemy" && !rewardsApplied) {
       rewardsApplied = true;
       applyLoss();
     }
     paint();
+  }
+
+  function applyCaptureRewards() {
+    state.coins += Math.floor(awardCoins() * 0.6);
+    if (battle.player.mon) addXpForCapture(battle.player.mon);
+  }
+
+  function addXpForCapture(mon) {
+    awardXpForWin(mon);
+    tryEvolve(mon);
   }
 
   function applyWinRewards() {
@@ -659,6 +733,12 @@ function openBattle(cfg) {
         worldScene?.respawn();
         showHub();
       });
+      return;
+    }
+
+    if (battle.winner === "captured") {
+      setWorldFrozen(false);
+      showHub();
       return;
     }
 

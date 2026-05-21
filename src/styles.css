@@ -213,3 +213,75 @@ button:disabled {
 .battle-bar.enemy > div {
   background: linear-gradient(90deg, #8a2d2d, #cf5e5e);
 }
+
+.battle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.3rem 0;
+}
+
+.battle-sprite {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(120, 200, 255, 0.25);
+  border-radius: 10px;
+}
+
+.battle-sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+.battle-sprite.enemy {
+  border-color: rgba(255, 140, 140, 0.45);
+}
+
+.battle-sprite.player {
+  border-color: rgba(140, 220, 255, 0.45);
+}
+
+.battle-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.battle-info p {
+  margin: 0 0 0.25rem;
+}
+
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.party-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.4rem;
+  border-bottom: 1px solid rgba(120, 200, 255, 0.12);
+}
+
+.party-sprite {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(120, 200, 255, 0.25);
+  border-radius: 8px;
+}
+
+.party-sprite svg {
+  width: 100%;
+  height: 100%;
+}

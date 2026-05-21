@@ -6,6 +6,8 @@ function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
+export const PARTY_LIMIT = 6;
+
 export function defaultState() {
   return {
     phase: "register",
@@ -15,8 +17,12 @@ export function defaultState() {
     islandIndex: 0,
     /** @type {import('./types').OwnedMonster[]} */
     party: [],
+    /** @type {import('./types').OwnedMonster[]} caught monsters past the party cap */
+    storage: [],
     inventoryEggs: [],
     eggRubs: 0,
+    /** Capture capsules currently held. */
+    capsules: 5,
     /** @type {string[]} ids of NPCs whose trainer battle has been won */
     defeatedTrainers: [],
     timothyIntroDone: false,
@@ -131,6 +137,31 @@ export function applyBlackout(state) {
   for (const m of state.party) {
     if (m && !m.isEgg) m.hp = m.maxHp;
   }
+}
+
+/**
+ * Restore all party monsters to full HP.
+ */
+export function healParty(state) {
+  for (const m of state.party) {
+    if (m && !m.isEgg) m.hp = m.maxHp;
+  }
+}
+
+/**
+ * Add a caught monster to the party (or storage if the party is full).
+ * @returns {"party" | "storage"}
+ */
+export function addCaughtMonster(state, mon) {
+  if (!state.party) state.party = [];
+  if (!state.storage) state.storage = [];
+  const partyCount = state.party.filter((m) => !m.isEgg).length;
+  if (partyCount < PARTY_LIMIT) {
+    state.party.push(mon);
+    return "party";
+  }
+  state.storage.push(mon);
+  return "storage";
 }
 
 /**

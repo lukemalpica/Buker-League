@@ -197,3 +197,54 @@ export function awardCoins() {
 export function awardXpForWin(playerMon) {
   addXp(playerMon, 22 + Math.floor(Math.random() * 16));
 }
+
+/**
+ * Capture chance for the current wild enemy.
+ * Scales from ~12% at full HP to ~92% at 1 HP.
+ * Higher-level monsters are slightly harder to catch.
+ * @param {ReturnType<typeof createBattle>} battle
+ */
+export function captureChance(battle) {
+  const e = battle.enemy?.mon;
+  if (!e) return 0;
+  const hpFactor = 1 - e.hp / e.maxHp;
+  const levelPenalty = Math.min(0.25, e.level * 0.008);
+  return Math.max(0.05, Math.min(0.95, 0.12 + hpFactor * 0.78 - levelPenalty));
+}
+
+/**
+ * Attempt to capture the current wild enemy with a capsule.
+ * Caller supplies the *snapshotted* chance from {@link captureChance}.
+ * On failure, the enemy gets a free turn.
+ * @param {ReturnType<typeof createBattle>} battle
+ * @returns {{ caught: boolean, captured?: import('./types').OwnedMonster }}
+ */
+export function tryCapture(battle) {
+  if (battle.over || battle.needsSwitch) return { caught: false };
+  const chance = captureChance(battle);
+  const roll = Math.random();
+  battle.log.push(`Capsule shakes… (${Math.round(chance * 100)}% chance)`);
+  if (roll < chance) {
+    const captured = battle.enemy.mon;
+    battle.over = true;
+    battle.winner = "captured";
+    battle.log.push(`Gotcha! ${captured.nickname} was caught!`);
+    return { caught: true, captured };
+  }
+  battle.log.push("The monster broke free!");
+  const em = MONSTERS[battle.enemy.mon.templateId];
+  const enemyMove = Math.floor(Math.random() * em.moves.length);
+  appendTurn(battle, "enemy", enemyMove);
+  if (battle.winner === "enemy" && battle.player.mon.hp <= 0) {
+    const backup = battle.party.findIndex(
+      (m, i) => i !== battle.activeIndex && m.hp > 0,
+    );
+    if (backup !== -1) {
+      battle.over = false;
+      battle.winner = null;
+      battle.needsSwitch = true;
+      battle.log.push(`${battle.player.mon.nickname} fainted! Choose another monster.`);
+    }
+  }
+  return { caught: false };
+}
