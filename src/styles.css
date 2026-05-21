@@ -184,6 +184,21 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button.danger {
+  border-color: #804040;
+  background: #2a1515;
+  color: #ffd6d6;
+}
+
+button.danger:hover {
+  background: #3a1818;
+  border-color: #b34d4d;
+}
+
+button.danger:disabled {
+  opacity: 0.45;
+}
+
 .log {
   margin-top: 0.75rem;
   padding: 0.65rem;

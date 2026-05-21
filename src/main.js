@@ -367,6 +367,7 @@ function showHub() {
       <button type="button" id="arena" ${state.arenaUnlocked ? "" : "disabled"}>Arena — Timothy finale ${state.arenaUnlocked ? "" : "(need all shards)"}</button>
       <button type="button" id="travel" ${canTravel ? "" : "disabled"}>${travelLabel}</button>
       <button type="button" id="save">Save (auto on most actions)</button>
+      <button type="button" id="restart" class="danger">Restart game (factory reset)</button>
     </div>
   `);
 
@@ -441,7 +442,52 @@ function showHub() {
     alert("Saved.");
   });
 
+  document.getElementById("restart")?.addEventListener("click", showRestartConfirm);
+
   syncHud();
+}
+
+/**
+ * Two-step confirmation that wipes the save and routes back to the start screen.
+ * Mirrors the destructive flow on the register screen but accessible mid-game.
+ */
+function showRestartConfirm() {
+  setWorldFrozen(true);
+  render(`
+    <h1>Restart game?</h1>
+    <p>This deletes your trainer, party, capsules, coins, shards, and storage.
+       It can't be undone.</p>
+    <p class="muted">Type <strong>RESTART</strong> below to confirm.</p>
+    <div class="actions" style="margin-top:0.5rem">
+      <input id="restart-confirm" maxlength="16"
+             style="padding:0.5rem;border-radius:8px;border:1px solid #664444;background:#1a0e0e;color:#ffd6d6;width:100%"
+             placeholder="Type RESTART" />
+      <button type="button" id="do-restart" class="danger" disabled>Erase everything and start over</button>
+      <button type="button" id="cancel-restart">Cancel</button>
+    </div>
+  `);
+
+  const input = /** @type {HTMLInputElement} */ (document.getElementById("restart-confirm"));
+  const confirmBtn = /** @type {HTMLButtonElement} */ (document.getElementById("do-restart"));
+  input?.addEventListener("input", () => {
+    confirmBtn.disabled = input.value.trim().toUpperCase() !== "RESTART";
+  });
+  input?.focus();
+
+  confirmBtn?.addEventListener("click", () => {
+    if (input.value.trim().toUpperCase() !== "RESTART") return;
+    wipeSave();
+    state = defaultState();
+    worldScene?.respawn();
+    setWorldFrozen(false);
+    syncHud();
+    showRegister();
+  });
+
+  document.getElementById("cancel-restart")?.addEventListener("click", () => {
+    setWorldFrozen(false);
+    showHub();
+  });
 }
 
 function timothyButtonLabel() {
