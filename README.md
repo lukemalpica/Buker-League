@@ -1,260 +1,392 @@
-🎮 Buker League
-Welcome to Buker League — a coding project made with GitHub! Think of this project like building your own digital LEGO world 🧱💻
+# 🎮 Buker League
 
-This README is written so even an 11-year-old can follow along.
+Welcome to **Buker League**, a coding project hosted on GitHub! 🚀
 
-Repository: TYRSHOLD/Buker-League
+Think of this project as building your own digital LEGO world, where different pieces of code work together to create something awesome.
 
-🌟 What Is Buker League?
-Buker League is a computer project where code works together like a sports team.
+**Repository:** TYRSHOLD/Buker-League
 
-The project probably includes:
+---
 
-🧠 Logic (thinking code)
-🎮 Game or app features
-📂 Files and folders
-⚡ Commands
-🌐 GitHub tools
-When programmers make projects, they split everything into smaller parts so computers can understand it easier.
+# 🌟 What is Buker League?
 
-🧒 Imagine It Like This
-Think of the project like a giant treehouse:
+Buker League is a software project made up of many smaller parts that work together, just like players on a sports team.
 
-Treehouse Part	Coding Part
-Walls	Files
-Rooms	Folders
-Instructions	Code
-Toolbox	Libraries
-Blueprint	README
-Builders	Developers
-This README is your blueprint 📘
+The project may include:
 
-🛠️ What You Need Before Starting
-Before running the project, install these tools.
+* 🧠 Game logic and programming
+* 🎮 Interactive features
+* 📂 Organized files and folders
+* ⚡ Commands and scripts
+* 🌐 GitHub tools and collaboration
 
-1️⃣ Install Git
-Git helps you download projects from GitHub.
+Programmers break large projects into smaller pieces so they're easier to build, understand, and improve.
 
-Official Website
-Git Downloads
+---
 
-2️⃣ Install VS Code
-VS Code is where programmers write code.
+# 🧒 Imagine It Like a Treehouse
 
-Official Website
-Visual Studio Code
+| Treehouse    | Coding Project |
+| ------------ | -------------- |
+| Walls        | Files          |
+| Rooms        | Folders        |
+| Instructions | Code           |
+| Toolbox      | Libraries      |
+| Blueprint    | README         |
+| Builders     | Developers     |
 
-3️⃣ Install Node.js
-Node.js lets JavaScript projects run on your computer.
+This README is your blueprint 📘.
 
-Official Website
-Node.js
+---
 
-Choose the LTS version because it is the safest and easiest version.
+# 🛠️ Before You Begin
 
-📥 Step 1 — Download The Project
-Open your terminal or command prompt.
+You'll need a few tools installed on your computer.
 
-Type this:
+## 1. Install Git
 
+Git helps you download and manage projects from GitHub.
+
+Download Git from:
+
+https://git-scm.com/downloads
+
+---
+
+## 2. Install Visual Studio Code
+
+VS Code is a free code editor used by millions of developers.
+
+Download VS Code from:
+
+https://code.visualstudio.com
+
+---
+
+## 3. Install Node.js
+
+Node.js allows JavaScript projects to run on your computer.
+
+Download Node.js from:
+
+https://nodejs.org
+
+Choose the **LTS (Long-Term Support)** version for the best experience.
+
+---
+
+# 📥 Step 1: Download the Project
+
+Open a terminal or command prompt and run:
+
+```bash
 git clone https://github.com/TYRSHOLD/Buker-League.git
-This copies the project onto your computer.
+```
 
-📂 Step 2 — Open The Folder
+This creates a copy of the project on your computer.
+
+---
+
+# 📂 Step 2: Open the Project Folder
+
+Move into the project folder:
+
+```bash
 cd Buker-League
-cd means:
+```
 
-"Go inside this folder"
+The `cd` command means:
 
-Now you are inside the project 🏠
+> "Change Directory"
 
-📦 Step 3 — Install The Project Stuff
-Most projects need extra tools called dependencies.
+Now you're inside the project folder.
+
+---
+
+# 📦 Step 3: Install Dependencies
+
+Most projects need additional code packages called **dependencies**.
 
 Think of dependencies like LEGO pieces the project needs before it can work.
 
 Run:
 
+```bash
 npm install
-This may take a few minutes ⏳
+```
 
-▶️ Step 4 — Start The Project
+This may take a few minutes.
+
+---
+
+# ▶️ Step 4: Start the Project
+
 Try one of these commands:
 
+```bash
 npm start
-OR
+```
 
-npm run dev
-One of them usually works.
-
-If the project starts correctly, you might see:
-
-localhost:3000
 or
 
-localhost:5173
-Open that in your browser 🌐
+```bash
+npm run dev
+```
 
-🧠 What Is Happening Behind The Scenes?
-When you run the project:
+If the project starts successfully, you may see something like:
 
-Your computer reads the code
-Node.js understands the JavaScript
-The files connect together
-A local website or app starts
-You can interact with it 🎮
-📁 Common Folder Meanings
-Most coding projects use folders like these:
+```text
+http://localhost:3000
+```
 
-Folder	What It Does
-src	Main code lives here
-public	Images and public files
-assets	Sounds, art, textures
-components	Reusable code pieces
-node_modules	Downloaded helper tools
-package.json	Project settings
-📘 What Is package.json?
-This file is like the project’s ID card 🪪
+or
 
-It tells your computer:
+```text
+http://localhost:5173
+```
 
-project name
-version
-dependencies
-commands
-scripts
-🧩 What Are Dependencies?
-Dependencies are extra code made by other programmers.
+Open that address in your web browser.
 
-Instead of building EVERYTHING yourself, you borrow tools.
+---
 
-Example:
+# 🧠 What Happens When You Start the Project?
 
-buttons
-animations
-game engines
-menus
-networking
-That saves LOTS of time 🚀
+When the project runs:
 
-🌐 What Is GitHub?
-GitHub is a giant website where programmers share projects.
+1. Your computer reads the code.
+2. Node.js executes the JavaScript.
+3. Project files connect together.
+4. A local website or application starts.
+5. You can interact with it directly.
 
-Official Website:
+---
 
-GitHub
+# 📁 Common Folder Names
 
-It helps people:
+Many projects use similar folder structures.
 
-save code
-work together
-share projects
-track changes
-fix bugs
-🧃 Beginner Coding Words
-Word	Meaning
-Code	Instructions for computers
-Bug	A mistake in code
-Script	A file with commands
-Terminal	Text area for commands
-Compile	Turn code into something runnable
-Repository	A project stored online
-Clone	Download a repository
-Commit	Save changes
-🐛 Common Problems
-❌ “npm is not recognized”
-You probably forgot to install Node.js.
+| Folder       | Purpose                     |
+| ------------ | --------------------------- |
+| src          | Main source code            |
+| public       | Public files and assets     |
+| assets       | Images, sounds, and artwork |
+| components   | Reusable code pieces        |
+| node_modules | Installed dependencies      |
+| package.json | Project configuration       |
 
-Install it here:
+---
 
-Node.js Downloads
+# 📘 What is package.json?
 
-❌ “git is not recognized”
-Git is missing.
+The `package.json` file acts like the project's ID card.
 
-Install it here:
+It contains:
 
-Git Downloads
+* Project name
+* Version number
+* Dependencies
+* Scripts and commands
+* Project settings
 
-❌ The project won’t start
-Try:
+---
 
+# 🧩 What Are Dependencies?
+
+Dependencies are tools and code written by other developers that your project can use.
+
+Examples include:
+
+* Buttons
+* Menus
+* Animations
+* Networking tools
+* Game libraries
+
+Using dependencies saves time and lets developers focus on building features.
+
+---
+
+# 🌐 What Is GitHub?
+
+GitHub is a platform where developers store, share, and collaborate on code.
+
+It helps developers:
+
+* Save projects
+* Track changes
+* Work together
+* Fix bugs
+* Share software with others
+
+Visit:
+
+https://github.com
+
+---
+
+# 📚 Beginner Coding Terms
+
+| Word       | Meaning                              |
+| ---------- | ------------------------------------ |
+| Code       | Instructions for computers           |
+| Bug        | A mistake in code                    |
+| Script     | A file containing commands           |
+| Terminal   | A text-based command window          |
+| Compile    | Convert code into something runnable |
+| Repository | A project stored online              |
+| Clone      | Download a repository                |
+| Commit     | Save changes to project history      |
+
+---
+
+# 🐛 Common Problems
+
+## npm is not recognized
+
+Node.js may not be installed correctly.
+
+Download it from:
+
+https://nodejs.org
+
+---
+
+## git is not recognized
+
+Git may not be installed correctly.
+
+Download it from:
+
+https://git-scm.com/downloads
+
+---
+
+## The project won't start
+
+Try reinstalling dependencies:
+
+```bash
 npm install
-again.
+```
 
-Sometimes dependencies fail the first time.
+Then start the project again.
 
-🎨 Cool Things You Can Learn From This Project
-By exploring Buker League, you can learn:
+---
 
-JavaScript
-GitHub
-Terminal commands
-Web apps
-Game logic
-Debugging
-Project structure
-These are REAL programming skills professionals use 💼
+# 🎨 Things You Can Learn
 
-🚀 Fun Things To Try
-Change Colors
-Look for CSS files and change colors 🎨
+Exploring Buker League can help you learn:
 
-Add Your Name
-Try changing text inside the project.
+* JavaScript
+* Git and GitHub
+* Terminal commands
+* Web development
+* Game programming
+* Debugging
+* Project organization
 
-Add Pictures
-Put images into the assets folder.
+These are real-world skills used by professional developers.
 
-Make New Features
+---
+
+# 🚀 Fun Experiments
+
+Try customizing the project:
+
+### 🎨 Change Colors
+
+Edit CSS files and create your own style.
+
+### ✏️ Add Your Name
+
+Modify text in the project.
+
+### 🖼️ Add Images
+
+Place pictures inside the assets folder.
+
+### ⭐ Create New Features
+
 Ideas:
 
-scoreboard
-player stats
-achievements
-animations
-sound effects
-dark mode
-🧠 Coding Superpower Tip
-Programmers are NOT people who magically know everything.
+* Scoreboards
+* Player statistics
+* Achievements
+* Sound effects
+* Animations
+* Dark mode
+
+---
+
+# 🧠 A Coding Secret
+
+Great programmers don't know everything.
 
 They:
 
-test things
-break things
-fix things
-Google stuff
-learn slowly
-Every expert programmer started as a beginner 👶➡️🧠
+* Test ideas
+* Make mistakes
+* Fix bugs
+* Search for answers
+* Keep learning
 
-🏆 How To Become Better At Coding
-Best Beginner Habits
-✅ Practice often ✅ Break things and fix them ✅ Read other people's code ✅ Build small projects ✅ Ask questions ✅ Never give up
+Every expert started as a beginner.
 
-📚 Helpful Learning Websites
-Learn JavaScript
-JavaScript.info
+---
 
-Learn GitHub
-GitHub Skills
+# 🏆 How to Improve Your Coding Skills
 
-Learn Coding Games
-Code.org
+Good habits include:
 
-❤️ Credits
-Made by the developers of:
+✅ Practice regularly
+✅ Build small projects
+✅ Read other people's code
+✅ Ask questions
+✅ Learn from mistakes
+✅ Keep experimenting
 
-Boomer & Luke
+Progress comes from consistency.
 
-And explored by YOU 🚀
+---
 
-⭐ Final Message
-Coding is like learning magic spells for computers.
+# 📚 Helpful Learning Resources
 
-At first it feels confusing…
+### JavaScript
+
+https://javascript.info
+
+### GitHub Skills
+
+https://skills.github.com
+
+### Code.org
+
+https://code.org
+
+---
+
+# ❤️ Credits
+
+Created by the developers of:
+
+**Boomer & Luke**
+
+And explored by **you**. 🚀
+
+---
+
+# ⭐ Final Message
+
+Coding is a lot like learning magic spells for computers.
+
+At first it can seem confusing.
 
 But every project teaches you something new.
 
-Keep building. Keep experimenting. Keep learning.
+Keep building.
+Keep experimenting.
+Keep learning.
 
-You got this 💪
+The more you practice, the better you'll become.
+
+**Good luck, and have fun creating! 🎮💻🚀**
